@@ -40,11 +40,11 @@ def sinkData(data: dict):
 
 ########################################################################
 #
-# FUNCTION: getActiveChannels
+# FUNCTION: getActiveSources
 # gets active channels
 #
 ########################################################################
-def getActiveChannels():
+def getActiveSources():
     data = supabase.table('sources').select('source_name').eq('active', '1').execute()
     channel_dict_list = data[0]
     channel_list = []
@@ -173,7 +173,7 @@ async def on_ready():
 # ToDo: have users direct the bot to only grab data from specific channels.
 @client.event
 async def on_message(message):
-    CHANNEL_ID = str(message.channel.id)
+    SOURCE_NAME = f'{message.guild.id}/{message.channel.id}'
 
     # ignore bot's own messages
     bot_id = client.user.id
@@ -181,12 +181,17 @@ async def on_message(message):
         exit
     # activechannel command
     elif message.content.startswith(f'<@!{bot_id}> activechannels'):
-        active_channels = getActiveChannels()
-        dataJSON = json.dumps(active_channels,indent=4)
+        active_sources = getActiveSources()
+        guild_id = message.guild.id
+        returnData = []
+        for each in active_sources:
+            if each.startswith(guild_id):
+                returnData.append(each)
+        dataJSON = json.dumps(returnData,indent=4)
         await message.channel.send(f'```\n{dataJSON}\n```')
 
     # only run if in approved channel list
-    elif CHANNEL_ID in getActiveChannels():
+    elif SOURCE_NAME in getActiveSources():
 
         # generate data
         raw = discordMessageToDict(message)
@@ -196,7 +201,7 @@ async def on_message(message):
         message_body = raw['message_body']
 
         # source name
-        SOURCE_NAME = str(CHANNEL_ID)
+        #SOURCE_NAME = 
         
         # construct data
         DATA = {
